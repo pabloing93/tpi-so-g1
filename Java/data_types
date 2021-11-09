@@ -1,0 +1,22 @@
+Tipo de datos primitivos
+Enteros
+  byte
+  short
+  int
+  long
+
+Decimales
+  float
+  double
+
+Otros
+char (1 solo caracter)
+boolean
+
+Tipos de datos objetos
+String (cadenas de texto)
+
+¿cómo declarar una variable?
+[data_type] [name] = [value] ;
+ejemplo:
+int num = 5;

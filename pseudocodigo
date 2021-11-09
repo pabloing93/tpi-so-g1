@@ -68,11 +68,13 @@ interface <Procesos> {
   // Atributos
   + id: Integer
   + tamaño: Real
+  + nombre: String
   
   // Métodos
-  constructor() {
+  constructor(id, tamaño, nombre) {
     proceso.id = id;
     proceso.tamaño = tamaño;
+    proceso.nombre = nombre;
   }
 }
 
@@ -92,9 +94,10 @@ class Procesos extends <Procesos> () {
   + tiempoDeArribo: Real
   + tiempoDeIrrupción: Real
   + prioridad: Integer
+  + nombre: String
 
   // Métodos
-  constructor() {
+  constructor(estado, tiempoDeArribo, tiempoDeIrrupción, prioridad) {
     proceso.estado = estado;
     proceso.tiempoDeArribo = tiempoDeArribo;
     proceso.tiempoDeIrrupción = tiempoDeIrrupción;
@@ -124,14 +127,33 @@ class SistemaOperativo extends <Procesos> () {
     sistemaOperativo.procesosMedianos = 120;
     sistemaOperativo.procesosGrandes = 250;
   }
-
-  + asignar_procesos(proceso): Boolean {
+  + generar_id_proceso() {
+    return this.procesos.length;
+  }
+  + asignar_proceso(proceso, memoria): Boolean {
     si (proceso.tamaño < memoria.tamaño_disponible) {
       memoria.cargar_proceso(proceso);
     }
   }
   + gestionar_procesos(evento): Boolean {}
   + terminar_procesos(proceso): Boolean {}
+  + cargar_proceso () {
+    nombre = System.out.println("Ingrese nombre del proceso: ");
+    tamaño = System.out.println("Ingrese tamaño del proceso: ");
+    tiempoDeArribo = System.out.println("Ingrese Tiempo de Arribo del proceso: ");
+    tiempoDeIrrupción = System.out.println("Ingrese Tiempo de Irrupción del proceso: ");
+    id = this.generar_id_proceso();
+    estado = "nuevo";
+    nuevo_proceso = new Procesos(
+      id, 
+      nombre, 
+      tamaño, 
+      estado,
+      tiempoDeArribo, 
+      tiempoDeIrrupción
+    );
+    this.asignar_proceso(nuevo_proceso);
+  }
 }
 
 class Eventos () {
