@@ -8,28 +8,48 @@ class Memoria () {
   + procesos: List
   + ultimaPosicion: Real
   + primeraPosicion: Real
+  + particiones: List
+
+  constructor(tamaño) {
+    this.tamaño = tamaño;
+    this.tamañoDisponible = tamaño;
+    this.proceso = [];
+    this.particiones = [];
+    this.primeraPosicion = 0;
+    this.ultimaPosicion = 0;
+  }
 
   // Métodos
   + actualizar_tamaño_disponible(tamaño): Boolean {
     memoria.tamaño_disponible = memoria.tamaño_disponible - tamaño;
   }
-  + actualizar_ultima_posicion(tamaño): Boolean {
-    memoria.ultima_posicion = memoria.ultima_posicion + tamaño;
+  + actualizar_primera_posicion(posicion) {
+    this.primeraPosicion = posicion;
+  }
+  + actualizar_ultima_posicion(posicion): Boolean {
+    this.ultima_posicion = posicion;
   }
   + cargar_proceso(proceso): Boolean {
     particion.setear_fragmentacionInterna(proceso.tamaño);
     memoria.procesos.push(proceso);
 	  memoria.actualizar_tamaño_disponible(proceso.tamaño);
-	  memoria.actualizar_ultima_posicion(proceso.tamaño);
+	  // memoria.actualizar_ultima_posicion(proceso.tamaño);
   }
-  + crear_particion(proceso) {
+
+  + crear_particion(tamaño, posicionInicio, posicionFin) {
     particion = new Particiones({
       // id = proceso.id;
-      // tamaño = proceso.tamaño;
-      // posicionInicio = memoria.ultima_posicion;
-      // memoria.actualizar_ultima_posicion(proceso.tamaño - 1);
-      // posicionFin = proceso.tamaño - 1;
+      tamaño,
+      posicionInicio,
+      posicionFin
+      // // sistema operativo ((100 + 0) - 1 ) = 99 ---> memoria.ultimaPosicion;
+      // // P1 (250 + 99) = 349 ---> memoria.ultimaPosicion;
+      // // P2 (120 + 349) = 469 ---> memoria.ultimaPosicion;
+      // // P3 (60 + 469) = 529 ---> memoria.ultimaPosicion;
+      // // memoria.actualizar_ultima_posicion(proceso.tamaño - 1);
     });
+    this.actualizar_primera_posicion(posicionInicio);
+    this.actualizar_ultima_posicion(posicionFin);
   }
 }
 
@@ -43,23 +63,23 @@ class Memoria () {
 
 class Particiones () {
   // Atributos
-  + id: Integer
+  // + id: Integer
   + tamaño: Real
   + posicionInicio: Real
   + posicionFin: Real
   + fragmentacionInterna: Real
-  + procesos: Object
+  // + procesos: Object
 
   // Métodos
-  constructor(id, tamaño, posicionInicio, posicionFin) {
-    particion.id = id;
-    particion.tamaño = tamaño;
-    particion.posicionInicio = posicionInicio;
-    particion.posicionFin = posicionFin;
-    particion.fragmentacionInterna = 0;
-    particion.procesos = null;
+  constructor(tamaño, posicionInicio, posicionFin) {
+    // particion.id = id;
+    this.tamaño = tamaño;
+    this.posicionInicio = posicionInicio;
+    this.posicionFin = posicionFin;
+    this.fragmentacionInterna = 0;
+    // particion.procesos = null;
   }
-  + setear_fragmentacionInterna(tamañoProceso) {
+  + set_fragmentacion_interna(tamañoProceso) {
     particion.fragmentacionInterna = particion.tamaño - tamañoProceso;
   }
 }
@@ -68,13 +88,11 @@ interface <Procesos> {
   // Atributos
   + id: Integer
   + tamaño: Real
-  + nombre: String
   
   // Métodos
-  constructor(id, tamaño, nombre) {
+  constructor(id, tamaño) {
     proceso.id = id;
     proceso.tamaño = tamaño;
-    proceso.nombre = nombre;
   }
 }
 
@@ -90,24 +108,25 @@ class PCB extends <Procesos> () {
 
 class Procesos extends <Procesos> () {
   // Atributos
+  + nombre: String;
   + estado: Enum('new', 'ready/suspend', 'ready', 'blocked', 'blocked/suspend', 'running', 'exit');
-  + tiempoDeArribo: Real
-  + tiempoDeIrrupción: Real
-  + prioridad: Integer
-  + nombre: String
+  + tiempoDeArribo: Real;
+  + tiempoDeIrrupcion: Real;
+  + prioridad: Integer;
 
   // Métodos
-  constructor(estado, tiempoDeArribo, tiempoDeIrrupción, prioridad) {
-    proceso.estado = estado;
-    proceso.tiempoDeArribo = tiempoDeArribo;
-    proceso.tiempoDeIrrupción = tiempoDeIrrupción;
-    proceso.prioridad = prioridad;
+  constructor(nombre, estado, tiempoDeArribo, tiempoDeIrrupción, prioridad) {
+    this.estado = estado;
+    this.tiempoDeArribo = tiempoDeArribo;
+    this.tiempoDeIrrupción = tiempoDeIrrupción;
+    this.prioridad = prioridad;
+    this.nombre = nombre;
   }
-  + actualizar_estado(estado): Boolean {
-    proceso.estado = estado;
+  + set_estado(estado): Boolean {
+    this.estado = estado;
   }
-  + actualizar_prioridad(prioridad): Boolean {
-    proceso.prioridad = prioridad;
+  + set_prioridad(prioridad): Boolean {
+    this.prioridad = prioridad;
   }
 }
 
@@ -117,15 +136,14 @@ class SistemaOperativo extends <Procesos> () {
   + procesosPequeños: Real
   + procesosMedianos: Real
   + procesosGrandes: Real
+  + tamaño = 100;
 
   // Métodos
-  constructor(id, tamaño) {
-    sistemaOperativo.id = id;
-    sistemaOperativo.tamaño = tamaño;
-    sistemaOperativo.procesos = [];
-    sistemaOperativo.procesosPequeños = 60;
-    sistemaOperativo.procesosMedianos = 120;
-    sistemaOperativo.procesosGrandes = 250;
+  constructor() {
+    this.procesos = [];
+    this.procesosPequeños = 60;
+    this.procesosMedianos = 120;
+    this.procesosGrandes = 250;
   }
   + generar_id_proceso() {
     return this.procesos.length;
@@ -136,7 +154,7 @@ class SistemaOperativo extends <Procesos> () {
     }
   }
   + gestionar_procesos(evento): Boolean {}
-  + terminar_procesos(proceso): Boolean {}
+  + terminar_proceso(proceso): Boolean {}
   + cargar_proceso () {
     nombre = System.out.println("Ingrese nombre del proceso: ");
     tamaño = System.out.println("Ingrese tamaño del proceso: ");
@@ -168,6 +186,16 @@ class Eventos () {
 }
 
 
-Accion TPI_SISTEMA-OPERATIVO {
+MAIN {
+
+  sistemaOperativo = new SistemaOperativo();
+
+  memoria = new Memoria(530);
+  memoria.crear_particion(sistemaOperativo.tamaño, 0, 99);
+  memoria.crear_particion(sistemaOperativo.procesosGrandes, 100, 349);
+  memoria.crear_particion(sistemaOperativo.procesosMedianos, 350, 469);
+  memoria.crear_particion(sistemaOperativo.procesosPequeños, 470, 529);
+
+  sistemaOperativo.cargar_proceso();
 
 }
