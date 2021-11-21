@@ -3,21 +3,24 @@ package entidades;
 import java.util.Objects;
 
 public class Proceso {
-	private static Integer ultimoId = 1;
 	private Integer id;
 	private Integer tamanio;
-	private String nombre;
-	// ver que onda el estado
 	private Integer tiempoArribo;
 	private Integer tiempoIrrupcion;
+	private Particion particion;
 
-	public Proceso(String nombre, Integer tiempoArribo, Integer tiempoIrrupcion, Integer tamanioKB) {
-		this.id = Proceso.ultimoId;
-		Proceso.ultimoId++;
-		this.nombre = nombre;
+	public Proceso(Integer id, Integer tiempoArribo, Integer tiempoIrrupcion, Integer tamanioKB) {
+		this.id = id;
 		this.tiempoArribo = tiempoArribo;
 		this.tiempoIrrupcion = tiempoIrrupcion;
 		this.tamanio = tamanioKB;
+	}
+
+	public Proceso(String[] arrayL) {
+		this.id = Integer.parseInt(arrayL[0]);
+		this.tamanio = Integer.parseInt(arrayL[1]);
+		this.tiempoArribo = Integer.parseInt(arrayL[2]);
+		this.tiempoIrrupcion = Integer.parseInt(arrayL[3]);
 	}
 
 	public void decrementarTiempoIrupcion() {
@@ -25,8 +28,11 @@ public class Proceso {
 	}
 	@Override
 	public String toString() {
-		return "Proceso [id=" + id + ", tamanio=" + tamanio + ", nombre=" + nombre + ", tiempoArribo=" + tiempoArribo
-				+ ", tiempoIrrupcion=" + tiempoIrrupcion + "]\n";
+		String ps = "---";
+		if(null!=particion)
+			ps = particion.getId().toString();
+		return "id=" + id + ", tamanio=" + tamanio + ", tiempoArribo=" + tiempoArribo
+				+ ", tiempoIrrupcion=" + tiempoIrrupcion + ", particion="+ps+"\n";
 	}
 
 
@@ -63,11 +69,6 @@ public class Proceso {
 	}
 
 
-	public String getNombre() {
-		return nombre;
-	}
-
-
 	public Integer getTiempoArribo() {
 		return tiempoArribo;
 	}
@@ -75,6 +76,14 @@ public class Proceso {
 
 	public Integer getTiempoIrrupcion() {
 		return tiempoIrrupcion;
+	}
+
+	public Particion getParticion() {
+		return particion;
+	}
+
+	protected void setParticion(Particion particion) {
+		this.particion = particion;
 	}
 
 }

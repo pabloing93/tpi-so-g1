@@ -1,89 +1,125 @@
 package entidades;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
-public class SistemaOperativo {
+import aux.Aux;
 
+public class SistemaOperativo {
+//Los valores que se definen son los correspondientes al enunciado del TPI
 	private static Integer tamanioMemoria = 530;
 	private static Integer tamanioParticionSO = 100;
-
 	private Memoria memoria;
-	private Procesador procesador;
+	private CPU cpu;
+	
+	//La cola LISTOS contiene los procesos que están cargados en memoria, esperando por CPU
 	private List<Proceso> listos = new ArrayList<Proceso>();
-	private List<Proceso> terminados = new ArrayList<Proceso>();
-	private List<Proceso> entrada = new ArrayList<Proceso>();
-	// la cola de listos se tiene que cargar de un archivo.
+	//La cola SALIENTES contiene los procesos que terminaron su TI
+	private List<Proceso> salientes = new ArrayList<Proceso>();
+	//La cola NUEVOS contiene los procesos leidos de un archivo.
+	private List<Proceso> nuevos = new ArrayList<Proceso>();
+	//La cola LISTOSSUSPENDIDOS contiene los procesos que fueron admitidos pero NO están cargados en memoria.
+	private List<Proceso> listoSuspendido = new ArrayList<Proceso>();
+	
 
-	public SistemaOperativo() {
-		inicializarMemoria();
-		inicializarProcesador();
-		cargarProcesos();
+	public SistemaOperativo(String file) {
+		inicializarMemoria(); 
+		inicializarcpu();
+		cargarProcesos(file);
+		System.out.println("\n\n\n----------------------------------------------------\n\n\n");
+		this.run();
 	}
 
 	public void run() {
-		//mientras hay procesos en la lista de entrada los mueve a la cola de listos dependiendo del clock. 
-		//Este if se ejecuta para tener algo en la cola de listos
-		if (entrada.size() > 0) {
-			verLlegada();
-		}
-		while (listos.size() > 0 || null != procesador.getProceso()) {
-			if (entrada.size() > 0) {
-				verLlegada();
-			}
-			ordenarListos();
-			terminarProceso();
-			if (listos.size() > 0) {
-				Proceso victima = listos.remove((int) 0);
-				if (null == procesador.getProceso()) {
-					// procesador Vacio
-					procesador.setProceso(victima);
-				} else {
-					// procesador con proceso
-					if (procesador.getProceso().getTiempoIrrupcion() > victima.getTiempoIrrupcion()) {
-						listos.add(procesador.getProceso());
-						procesador.setProceso(victima);
-					} else {
-						listos.add(victima);
-					}
-				}
-			}
-			imprimir();
-			procesador.incrementarClock();
+		//Mientras haya procesos en CPU o en alguna de las colas seguirá ejecutándose los planificadores.
+		while (!nuevos.isEmpty() || !listoSuspendido.isEmpty() || !listos.isEmpty() || !cpu.isEmpty()) {
+			planificadorLargoPlazo();
+			planificadorMedianoPlazo();
+			planificadorCortoPlazo();
+
 		}
 	}
 
-	private void imprimir() {
-		System.out.println(procesador);
-		System.out.println(listos);
-		System.out.println(terminados);
-
-	}
-
-	// termina el proceso actual y lo manda a la cola de terminados
-	public void terminarProceso() {
-		if (null != procesador.getProceso()) {
-			if (procesador.getProceso().getTiempoIrrupcion() == 0) {
-				terminados.add(procesador.getProceso());
-				procesador.setProceso(null);
-			}
-		}
-	}
-
-	public void verLlegada() {
+	//Mueve los procesos de la cola NUEVOS a ListosSuspendidos dependiendo del tiempo de arribo.
+	public void planificadorLargoPlazo() {
 		List<Proceso> tmp = new ArrayList<Proceso>();
-		for (Proceso proceso : entrada) {
-			if (proceso.getTiempoArribo() == procesador.getClock()) {
+		for (Proceso proceso : nuevos) {
+			if (proceso.getTiempoArribo() == cpu.getClock()) {
 				tmp.add(proceso);
 			}
 		}
-		listos.addAll(tmp);
-		entrada.removeAll(tmp);
+		nuevos.removeAll(tmp);
+		listoSuspendido.addAll(tmp);
 	}
 
+	//Mueve los procesos de ListosSuspendidos a LISTOS dependiendo si hay particiones libres. 
+	//Selecciona la partición que genere menor FI
+	public void planificadorMedianoPlazo() {
+		List<Particion> particiones = this.memoria.getParticiones();
+		Aux.ordenarTA(listoSuspendido);
+		int ixLyS = 0;
+		List<Proceso> tmp = new ArrayList<Proceso>();
+		while (memoria.isParticionEmpty() && listoSuspendido.size() > ixLyS) {
+			Proceso p = listoSuspendido.get(ixLyS);
+			Integer minDif = Integer.MAX_VALUE;
+			int partIX = -1;
+			for (Particion part : particiones) {
+				if (!part.isSo() && part.isEmpty()) {
+					if ((part.getTamanio() >= p.getTamanio()) && (part.getTamanio() - p.getTamanio() < minDif)) {
+						minDif = part.getTamanio() - p.getTamanio();
+						partIX = particiones.indexOf(part);
+					}
+				}
+			}
+			if (partIX >= 0) {
+				particiones.get(partIX).setProceso(p);
+				tmp.add(p);
+			}
+			ixLyS++;
+		}
+		listos.addAll(tmp);
+		listoSuspendido.removeAll(tmp);
+	}
+
+	//Selecciona el proceso a ejecutarse. Comparando los Tiempos de Irrupción. (Aplicando SRTF)
+	public void planificadorCortoPlazo() {
+		Aux.ordenarTI(listos);
+		this.terminarProceso();
+		if (listos.size() > 0) {
+			Proceso victima = listos.remove((int) 0);
+			if (cpu.isEmpty()) {
+				// procesador Vacio
+				cpu.setProceso(victima);
+			} else {
+				// procesador con proceso
+				if (cpu.getProceso().getTiempoIrrupcion() > victima.getTiempoIrrupcion()) {
+					this.listos.add(cpu.getProceso());
+					cpu.setProceso(victima);
+				} else {
+					listos.add(victima);
+				}
+			}
+		}
+		Aux.debug(this);
+		cpu.incrementarClock();
+	}
+
+	// Termina el proceso actual moviéndolo a la cola SALIENTES y libera la partición que ocupaba.
+	public void terminarProceso() {
+		if (null != cpu.getProceso()) {
+			if (cpu.getProceso().getTiempoIrrupcion() == 0) {
+				Aux.imprimir(this);
+				salientes.add(cpu.getProceso());
+				cpu.getProceso().getParticion().setProceso(null);
+				cpu.getProceso().setParticion(null);
+				cpu.setProceso(null);
+				planificadorMedianoPlazo();
+				Aux.ordenarTI(listos);
+			}
+		}
+	}
+
+//Crea las particiones fijas en memoria
 	private void inicializarMemoria() {
 		System.out.print("Iniciando memoria..........");
 		this.memoria = new Memoria(tamanioMemoria, tamanioParticionSO);
@@ -94,46 +130,44 @@ public class SistemaOperativo {
 		System.out.println(this.memoria.getParticiones());
 	}
 
-	private void inicializarProcesador() {
-		System.out.print("Iniciando Procesador..........");
-		this.procesador = new Procesador();
+	private void inicializarcpu() {
+		System.out.print("Iniciando cpu..........");
+		this.cpu = new CPU();
 		System.out.println("OK");
-		System.out.println(this.procesador);
+		System.out.println(this.cpu);
 	}
-
-	private void cargarProcesos() {
+//Lee los procesos desde un archivo
+	private void cargarProcesos(String file) {
 		System.out.print("CargandoProcesos..........");
-		// nombre tiempoArribo tiempoIrupcion tamañoMemoriaKB
-		this.entrada.add(new Proceso("proceso 1", 0, 5, 50));
-		this.entrada.add(new Proceso("proceso 2", 1, 2, 30));
-		this.entrada.add(new Proceso("proceso 3", 0, 7, 30));
-		this.entrada.add(new Proceso("proceso 4", 2, 5, 200));
-		this.entrada.add(new Proceso("proceso 5", 2, 4, 200));
-		this.entrada.add(new Proceso("proceso 6", 5, 10, 100));
-		ordenarEntrada();
+		//La lista de procesos obtenidas del archivo se mueven a la cola NUEVOS
+		this.nuevos = Aux.LoadFile(file);
+		Aux.ordenarTA(nuevos);
 		System.out.println("OK");
-		System.out.println(entrada);
+		System.out.println(nuevos);
 	}
 
-	// ordena la cola de entrada por tiempo de arribo.
-	private void ordenarEntrada() {
-		Collections.sort(entrada, new Comparator<Proceso>() {
-			@SuppressWarnings("deprecation")
-			@Override
-			public int compare(Proceso p1, Proceso p2) {
-				return new Integer(p1.getTiempoArribo()).compareTo(new Integer(p2.getTiempoArribo()));
-			}
-		});
+	public CPU getCPU() {
+		return this.cpu;
 	}
 
-	// ordena la cola de listos por tiempo de irrupcion
-	private void ordenarListos() {
-		Collections.sort(listos, new Comparator<Proceso>() {
-			@SuppressWarnings("deprecation")
-			@Override
-			public int compare(Proceso p1, Proceso p2) {
-				return new Integer(p1.getTiempoIrrupcion()).compareTo(new Integer(p2.getTiempoIrrupcion()));
-			}
-		});
+	public Memoria getMemoria() {
+		return this.memoria;
 	}
+
+	public List<Proceso> getListos() {
+		return this.listos;
+	}
+
+	public List<Proceso> getListosSuspendidos() {
+		return this.listoSuspendido;
+	}
+
+	public List<Proceso> getNuevos() {
+		return this.nuevos;
+	}
+
+	public List<Proceso> getSalientes() {
+		return this.salientes;
+	}
+
 }
