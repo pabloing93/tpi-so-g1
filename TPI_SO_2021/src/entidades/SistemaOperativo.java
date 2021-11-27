@@ -11,15 +11,22 @@ public class SistemaOperativo {
 	private static Integer tamanioParticionSO = 100;
 	private Memoria memoria;
 	private CPU cpu;
-	// La cola LISTOS contiene los procesos que están cargados en memoria, esperando
-	// por CPU
+	/**
+	 *  La cola LISTOS contiene los procesos que están cargados en memoria, esperando por CPU
+	 */
 	private List<Proceso> listos = new ArrayList<Proceso>();
-	// La cola SALIENTES contiene los procesos que terminaron su TI
+	/**
+	 * La cola SALIENTES contiene los procesos que terminaron su TI
+	 */
 	private List<Proceso> salientes = new ArrayList<Proceso>();
-	// La cola NUEVOS contiene los procesos leidos de un archivo.
+	/**
+	 *  La cola NUEVOS contiene los procesos leidos de un archivo.
+	 */
 	private List<Proceso> nuevos = new ArrayList<Proceso>();
-	// La cola LISTOSSUSPENDIDOS contiene los procesos que fueron admitidos pero NO
-	// están cargados en memoria.
+	/**
+	 *  La cola LISTOSSUSPENDIDOS contiene los procesos que fueron admitidos pero NO están cargados en memoria.
+	 */
+ 
 	private List<Proceso> listoSuspendido = new ArrayList<Proceso>();
 
 	public SistemaOperativo(String file) {
@@ -31,8 +38,9 @@ public class SistemaOperativo {
 	}
 
 	public void run() {
-		// Mientras haya procesos en CPU o en alguna de las colas seguirá ejecutándose
-		// los planificadores.
+		/**
+		 *  Mientras haya procesos en CPU o en alguna de las colas seguirá ejecutándose los planificadores.
+		 */
 		while (!nuevos.isEmpty() || !listoSuspendido.isEmpty() || !listos.isEmpty() || !cpu.isEmpty()) {
 			planificadorLargoPlazo();
 			planificadorMedianoPlazo();
@@ -41,8 +49,9 @@ public class SistemaOperativo {
 		}
 	}
 
-	// Mueve los procesos de la cola NUEVOS a ListosSuspendidos dependiendo del
-	// tiempo de arribo.
+	/**
+	 *  Mueve los procesos de la cola NUEVOS a ListosSuspendidos dependiendo del tiempo de arribo.
+	 */
 	public void planificadorLargoPlazo() {
 		List<Proceso> tmp = new ArrayList<Proceso>();
 		for (Proceso proceso : nuevos) {
@@ -54,9 +63,10 @@ public class SistemaOperativo {
 		listoSuspendido.addAll(tmp);
 	}
 
-	// Mueve los procesos de ListosSuspendidos a LISTOS dependiendo si hay
-	// particiones libres.
-	// Selecciona la partición que genere menor FI
+	/**
+	 *  Mueve los procesos de ListosSuspendidos a LISTOS dependiendo si hay particiones libres. Selecciona la partición que genere menor FI
+	 */
+	
 	public void planificadorMedianoPlazo() {
 		Aux.ordenarTI(listoSuspendido);
 		if (memoria.isParticionEmpty()) {
@@ -88,7 +98,7 @@ public class SistemaOperativo {
 				listos.addAll(tmp);
 				listoSuspendido.removeAll(tmp);
 			} else {
-				VerificarCpuListos(); 
+				VerificarCpuListos();
 			}
 		} else {
 			// todas las particiones llenas
@@ -96,16 +106,22 @@ public class SistemaOperativo {
 		}
 	}
 
+	/**
+	 * Criterio de expropiación: https://github.com/pabloing93/tpi-so-g1/blob/f7188c6592860e28913a1061295848fe375e0f26/Criterio%20de%20expropiaci%C3%B3n.jpeg
+	 */
 	public void VerificarCpuListos() {
 		if (listoSuspendido.size() > 0) {
-			// Aux.ordenarTI(listoSuspendido);
 			Proceso plYs = listoSuspendido.get(0);
-			// expropiando CPU
+			/**
+			 * Compara el tiempo de irrupción del proceso que quiere entrar con el que se encuentra en CPU. Si es menor procede a buscar una partición
+			 */
 			if (null != cpu.getProceso() && plYs.getTiempoIrrupcion() < cpu.getProceso().getTiempoIrrupcion()) {
 				Aux.ordenarTI(listos);
 				Integer n = listos.size() - 1;
 				Integer nEncontrado = -1;
-				// buscar posicion de memoria en Listos
+				/**
+				 * Busca una posicion de memoria en la cola de LISTOS 
+				 */
 				while (n > -1 && nEncontrado < 0) {
 					Proceso pn = listos.get(n);
 					if (plYs.getTamanio() <= pn.getParticion().getTamanio()) {
@@ -113,7 +129,9 @@ public class SistemaOperativo {
 					}
 					n--;
 				}
-				// Se encontro una particion en listos
+				/**
+				 * Se encontró una particion en la cola de LISTOS y hace la expropiación del proceso que esta en dicha partición
+				 */
 				if (nEncontrado > -1) {
 					Proceso saliente = listos.remove((int) nEncontrado);
 					Particion part = saliente.getParticion();
@@ -123,22 +141,26 @@ public class SistemaOperativo {
 					listoSuspendido.remove(plYs);
 					listos.add(plYs);
 				} else {
-					// comprobar si el proceso de cpu tiene una particion igual o mayor al tamño de
-					// plYs
+					/**
+					 * si no encuentró comprueba que la partición del proceso que está en CPU sea igual o mayor al tamaño que requiere el proceso
+					 */
+					
 					if (plYs.getTamanio() <= cpu.getProceso().getParticion().getTamanio()) {
 						Proceso saliente = cpu.getProceso();
 						cpu.setProceso(null);
 						Particion part = saliente.getParticion();
 						saliente.setEmptyParticion();
 						listoSuspendido.add(saliente);
-						part.setProceso(plYs); 
+						part.setProceso(plYs);
 						listoSuspendido.remove(plYs);
 						listos.add(plYs);
 					}
 
 				}
 			} else {
-				// buscar un lugar en la cola de listos
+				/**
+				 * Busca una posición de memoria en la cola de LISTOS comparando tiempo de irrupción y tamaño de partición
+				 */
 				Aux.ordenarTI(listos);
 				Integer n = listos.size() - 1;
 				Integer nEncontrado = -1;
@@ -151,6 +173,9 @@ public class SistemaOperativo {
 					}
 					n--;
 				}
+				/**
+				 * Se encontró una particion en la cola de LISTOS y hace la expropiación del proceso que esta en dicha partición
+				 */
 				if (nEncontrado > -1) {
 					Proceso saliente = listos.remove((int) nEncontrado);
 					Particion part = saliente.getParticion();
@@ -164,18 +189,20 @@ public class SistemaOperativo {
 		}
 	}
 
-	// Selecciona el proceso a ejecutarse. Comparando los Tiempos de Irrupción.
-	// (Aplicando SRTF)
+	/**
+	 *  Selecciona el proceso a ejecutarse aplicando SRTF. (Comparando los Tiempos de Irrupción). 
+	 */
+	
 	public void planificadorCortoPlazo() {
 		Aux.ordenarTI(listos);
 		this.terminarProceso();
 		if (listos.size() > 0) {
 			Proceso victima = listos.remove((int) 0);
 			if (cpu.isEmpty()) {
-				// procesador Vacio
+				// El procesador está Vacio
 				cpu.setProceso(victima);
 			} else {
-				// procesador con proceso
+				// procesador tiene algún proceso
 				if (cpu.getProceso().getTiempoIrrupcion() > victima.getTiempoIrrupcion()) {
 					this.listos.add(cpu.getProceso());
 					cpu.setProceso(victima);
@@ -188,8 +215,10 @@ public class SistemaOperativo {
 		cpu.incrementarClock();
 	}
 
-	// Termina el proceso actual moviéndolo a la cola SALIENTES y libera la
-	// partición que ocupaba.
+	/**
+	 * Termina el proceso actual (TI=0) moviéndolo a la cola SALIENTES y liberando la partición que ocupaba.
+	 */
+	
 	public void terminarProceso() {
 		if (null != cpu.getProceso()) {
 			if (cpu.getProceso().getTiempoIrrupcion() == 0) {
@@ -204,7 +233,9 @@ public class SistemaOperativo {
 		}
 	}
 
-//Crea las particiones fijas en memoria
+/**
+ * Crea las particiones fijas en memoria
+ */
 	private void inicializarMemoria() {
 		System.out.print("Iniciando memoria..........");
 		this.memoria = new Memoria(tamanioMemoria, tamanioParticionSO);
@@ -222,10 +253,11 @@ public class SistemaOperativo {
 		System.out.println(this.cpu);
 	}
 
-//Lee los procesos desde un archivo
+/**
+ * Lee los procesos del archivo pasado como parámetro
+ */
 	private void cargarProcesos(String file) {
 		System.out.print("CargandoProcesos..........");
-		// La lista de procesos obtenidas del archivo se mueven a la cola NUEVOS
 		this.nuevos = Aux.LoadFile(file);
 		Aux.ordenarTA(nuevos);
 		System.out.println("OK");

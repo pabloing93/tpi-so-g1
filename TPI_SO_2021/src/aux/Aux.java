@@ -13,7 +13,7 @@ import entidades.Proceso;
 import entidades.SistemaOperativo;
 
 public class Aux {
-	private static Boolean isDebug = true;
+	private static Boolean isDebug = false;
 //Lee el archivo de procesos y devuelve una lista de procesos.
 	public static List<Proceso> LoadFile(String file) {
 		List<Proceso> procesos = new ArrayList<Proceso>();
