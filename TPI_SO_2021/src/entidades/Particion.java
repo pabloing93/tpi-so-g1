@@ -48,8 +48,8 @@ public class Particion {
 		this.proceso = proceso;
 		if (null != this.proceso) {
 			this.proceso.setParticion(this);
-			this.calcularFragmentacionInterna();
 		}
+		this.calcularFragmentacionInterna();
 	}
 
 	public Integer getId() {

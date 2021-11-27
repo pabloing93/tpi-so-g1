@@ -82,8 +82,13 @@ public class Proceso {
 		return particion;
 	}
 
-	protected void setParticion(Particion particion) {
+	protected void setParticion(Particion particion){
 		this.particion = particion;
+	}
+	
+	public void setEmptyParticion() {
+		this.particion.setProceso(null);
+		this.particion=null;
 	}
 
 }
